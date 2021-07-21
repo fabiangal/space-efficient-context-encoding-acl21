@@ -2,7 +2,6 @@
 
 This is the repository for the above mentioned paper. It can be found here: *LINK TO PAPER*
 
-*Some more information*
 
 ### Knowledge Graphs ###
 
