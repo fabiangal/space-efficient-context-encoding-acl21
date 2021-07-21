@@ -13,7 +13,11 @@ from torch.utils.data import DataLoader, TensorDataset
 SPECIAL_TOKENS = ["<SST>", "<END>", "<PAD>", "<SPK:S>", "<SPK:O>"]
 
 ATTR_TO_SPECIAL_TOKENS = {"bos_token": "<SST>", "eos_token": "<END>", "pad_token": "<PAD>",
-                          "additional_special_tokens": ["<SPK:S>", "<SPK:O>"]}
+                          "additional_special_tokens": ["<SPK:S>", "<SPK:O>", "<DEL:MOVIE>","<DEL:ACTOR0>",
+                                                        "<DEL:ACTOR1>", "<DEL:WRITER>", "<DEL:DIRECTOR>",
+                                                        "<FACT:ACTOR0>", "<DEL:CERTIFICATE>", "<DEL:BUDGET>",
+                                                        "<DEL:COUNTRY>", "<DEL:YEAR>", "<DEL:GENRE0>", "<FACT:PLOT>",
+                                                        "<FACT:OBJECT>", "<OPINION:MOVIE>", "<OPINION:MOVIE>"]}
 
 KG_ENCODING_MAPPING = {
     "movie": "<DEL:MOVIE>",
@@ -37,12 +41,9 @@ KG_ENCODING_MAPPING = {
 
 class Komodis:
     def __init__(self, tokenizer):
-        """
-        Args:
-            tokenizer   A transformers tokenizer object.
-        """
         self.tokenizer = tokenizer
         self.kg_encoding_mapping = {}
+        self.num_added_tokens = self.tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKENS)
         for key, value in KG_ENCODING_MAPPING.items():
             value_id = self.tokenizer.convert_tokens_to_ids(value)
             self.kg_encoding_mapping[key] = value_id
@@ -50,16 +51,24 @@ class Komodis:
 
         self.spk_s, self.spk_o = self.tokenizer.convert_tokens_to_ids(SPECIAL_TOKENS[3:5])
 
-    @staticmethod
-    def _convert_dialogue_to_samples(dialogue, history_length, max_length):
-        """ Converts a dialogue into multiple samples.
+    def prepare_dataset(self, dataset, graphs):
+        """ """
+        self._dataset = {}
+        for split in ["train", "valid", "test"]:
+            self._dataset[split] = []
+            for dialogue_id, dialogue in dataset[split].items():
+                graph = graphs[split][dialogue_id]
+                dialogue = [d.lower() for d in dialogue["dialogue"]]
+                dialogue = Komodis._replace_special_moviecorpus_tokens(dialogue)
+                dialogue = [self.tokenizer.encode(d) for d in dialogue]
+                self._dataset[split].append({
+                    "dialogue": dialogue,
+                    "sequence": graph["sequence"],
+                    "attn_matrix": graph["attn_matrix"]
+                })
 
-        Args:
-            dialogue        A dict. A KOMODIS dialogue.
-            history_length  An integer. Maximum number of previous utterances for a sample.
-            max_length      An integer. Maximum number of tokens per sample.
-
-        """
+    def _convert_dialogue_to_samples(self, dialogue, history_length, max_length):
+        """ """
         samples = []
 
         for num in range(len(dialogue["dialogue"]) - 1):
@@ -86,14 +95,11 @@ class Komodis:
                 # (num + 1 - lower -t):  plus one token per utterance in the history
                 num_special_tokens = 3 + (num + 1 - lower - t)
 
-                # check if sequence length fits max_length (if so, we don't need to shorten the history)
                 if (len_hist + len_label + len_context + num_special_tokens) <= max_length:
                     break
 
-                # this will remove the left most utterance from the history, to shorten the sequence
                 t += 1
 
-                # if the sequence is too long even if there is only one additional utterance, it must be skipped
                 if lower + t == num + 1:
                     skip = True
                     break
@@ -118,16 +124,10 @@ class Komodis:
         return samples
 
     def get_torch_features(self, split, batch_size):
-        """ Returns a torch dataset object for training.
-
-        Args:
-            split       A string. One of: train, valid, test.
-            batch_size  The batch size of the data object.
-
-        """
+        """ """
         samples = []
         for dialogue in self._dataset[split]:
-            samples += Komodis._convert_dialogue_to_samples(dialogue, history_length=3, max_length=256)
+            samples += self._convert_dialogue_to_samples(dialogue, history_length=3, max_length=256)
 
         features = {
             "input_ids": [],
@@ -138,7 +138,7 @@ class Komodis:
 
         for sample in samples:
             seqs = self._convert_sample_to_sequences(history=sample["history"],
-                                                     reply=sample["label"],
+                                                     reply=sample["label"][0],
                                                      kg_nodes=sample["kg_sequence"],
                                                      kg_attn_matrix=sample["kg_attn_matrix"])
 
@@ -159,14 +159,7 @@ class Komodis:
         return loader
 
     def process_subgraph(self, subgraph, encoding, inference=False, max_clen=-1):
-        """ Processes one subgraph into sequences.
-
-        Args:
-             subgraph   A dict. A KOMODIS subgraph.
-             encoding   A string. One of: series, parallel.
-             inference  A boolean. If True, the function don't require first- and second-speaker separation.
-             max_clen   An integer. The maximum number of tokens for the subgraph encoding.
-        """
+        """ """
 
         def process_series():
             """ Uses the specific encoding for komodis, where relations are not explicitly encoded.
@@ -206,34 +199,25 @@ class Komodis:
             return full_length
 
         def shorten_context(sequence, matrix):
-            """ Shortens the subgraph by removing one node and corresponding edges. """
+            """ """
             while sequence_length(sequence) > max_clen:
-
-                # estimate a random node
                 remove_candidates = []
                 for idx, item in enumerate(sequence):
                     if item[3] not in ["movie", "attitude"]:
                         remove_candidates.append(idx)
                 remove_candidate = random.choice(remove_candidates)
-
-                # delete node in matrix
                 matrix = np.delete(matrix, remove_candidate, axis=0)
                 matrix = np.delete(matrix, remove_candidate, axis=1)
-
-                # delete node in sequence
                 sequence.pop(remove_candidate)
 
-                # look for edges that belong to the node
                 for idx, item in enumerate(sequence):
                     if item[3] == "attitude":
                         att_rels = 0
                         for att_rel in matrix[idx]:
                             att_rels += att_rel
                         if att_rels == 1:
-                            # delete them from the matrix
                             matrix = np.delete(matrix, idx, axis=0)
                             matrix = np.delete(matrix, idx, axis=1)
-                            # delete them from the sequence
                             sequence.pop(idx)
                             break
 
@@ -270,8 +254,7 @@ class Komodis:
         return {"sequence": subgraph_sequence, "attn_matrix": subgraph_attn_mask}
 
     def _convert_sample_to_sequences(self, history, reply, kg_nodes, kg_attn_matrix):
-        """ Converts one sample into sequences for GPT-2 training. """
-
+        """ """
         context_input_ids = list(chain(*[x[0] for x in kg_nodes]))
         context_token_type_ids = list(chain(*[x[1] for x in kg_nodes]))
 
@@ -308,8 +291,7 @@ class Komodis:
 
     @staticmethod
     def _pad_features(features, padding):
-        """ Pads the features to it's maximum sequence with a given padding token. """
-
+        """ """
         keys = ["input_ids", "token_type_ids", "lm_labels"]
         max_l = max(len(feature) for feature in features["input_ids"])
         for name in keys:
