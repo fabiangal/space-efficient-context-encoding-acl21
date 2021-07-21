@@ -27,8 +27,6 @@ python process_graphs.py --dataset komodis --depth 0 --encoding series
 
 To run a training please use:
 
-The train script is not implemented yet! It will be available soon.
-
 ````
 python train.py --dataset komodis --depth 0 --encoding series
 ````
