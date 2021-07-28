@@ -72,18 +72,27 @@ if args.dataset == "komodis":
             sys.exit()
         with open("data/datasets/komodis/komodis_dialogues_{}.json".format(split), "r") as f:
             dataset[split] = json.load(f)
-
-    # --- create and/or open knowledge graphs ---
-    file = "data/processed/{}_graphs_d{}_{}-enc.pkl".format(args.dataset, args.depth, args.encoding)
-    if not os.path.isfile(file):
-        import process_graphs
-        exec(open("process_graphs.py").read())
-
-    with open(file, "rb") as f:
-        graphs = pickle.load(f)
+elif args.dataset == "opendialkg":
+    # --- open original dataset ---
+    dataset = {}
+    for split in ["train", "valid", "test"]:
+        if not os.path.isfile("data/datasets/opendialkg/{}_opendialkg.json".format(split)):
+            print("Please unpack the opendialkg dataset in './data/datasets/'.")
+            sys.exit()
+        with open("data/datasets/opendialkg/{}_opendialkg.json".format(split), "r") as f:
+            dataset[split] = json.load(f)
 else:
     print("Argument dataset={} is not valid!".format(args.dataset))
     sys.exit()
+
+# --- create and/or open knowledge graphs ---
+file = "data/processed/{}_graphs_d{}_{}-enc.pkl".format(args.dataset, args.depth, args.encoding)
+if not os.path.isfile(file):
+    import process_graphs
+    exec(open("process_graphs.py").read())
+
+with open(file, "rb") as f:
+    graphs = pickle.load(f)
 
 # --- prepare training ------------------------------------------------------------------------------------------------
 tokenizer = transformers.GPT2Tokenizer.from_pretrained("gpt2")

@@ -20,6 +20,10 @@ parser = ArgumentParser()
 parser.add_argument("--dataset", type=str, help="Name of the dataset (komodis or opendialkg).")
 parser.add_argument("--depth", type=int, help="Graph depth (0, 1 or 2). See paper for more information.")
 parser.add_argument("--encoding", type=str, help="Encoding type (series or parallel) See paper for more information.")
+parser.add_argument("--lr", type=float, default=6.0e-5, help="Learning rate for training.")
+parser.add_argument("--epochs", type=int, default=3, help="Number of epochs for training.")
+parser.add_argument("--batch_size", type=int, default=4, help="Train and valid batch size for training.")
+parser.add_argument("--device", type=str, default="cpu", help="Only cpu support in with this repository.")
 args = parser.parse_args()
 
 

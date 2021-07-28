@@ -10,11 +10,14 @@ We provide the generated knowledge graphs (depth 0 & 1) for the
 * KOMODIS dataset ([Link](https://github.com/fabiangal/komodis-dataset) to official repository)
 * and OpenDialKG dataset ([Link](https://github.com/facebookresearch/opendialkg) to official repository)
 
-in *data/knowledge_graphs/*. For KOMODIS please download the dataset in *data/dataset/*. It will not work
-with the version from the official repository. Please unzip all files before running scripts.
+in *data/knowledge_graphs/*. Please download the datasets in *data/dataset/*. It will not work
+with the version from the official repositories. Please unzip all files before running scripts.
 
 If you are interested in the graphs with depth > 1, please contact us. 
 We will send you corresponding download links.
+
+If you use the OpenDialKG dataset make sure to cite the authors correctly as well 
+(citation information can be found in the linked dataset repository above).
 
 
 ### Data Processing and Model ###
