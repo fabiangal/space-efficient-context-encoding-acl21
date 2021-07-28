@@ -68,6 +68,8 @@ def run():
                                    for k, v in graphs_raw[split].items()}
 
     # save graphs
+    if not os.path.exists("data/processed"):
+        os.mkdir("data/processed/")
     with open("data/processed/{}_graphs_d{}_{}-enc.pkl".format(args.dataset, args.depth, args.encoding), "wb") as f:
         pickle.dump(graphs_processed, f)
 
