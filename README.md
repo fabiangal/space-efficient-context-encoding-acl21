@@ -1,6 +1,6 @@
 # Space Efficient Context Encoding for Non-Task-Oriented Dialogue Generation with Graph Attention Transformer #
 
-This is the repository for the above mentioned paper. It can be found here: [link}(https://aclanthology.org/2021.acl-long.546/)
+This is the repository for the above mentioned paper. It can be found here: [link](https://aclanthology.org/2021.acl-long.546/)
 
 
 ### Knowledge Graphs ###
