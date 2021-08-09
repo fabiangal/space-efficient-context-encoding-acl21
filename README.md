@@ -36,7 +36,23 @@ python train.py --dataset komodis --depth 0 --encoding series
 
 ### Reference ###
 
-Following soon ...
+````
+@inproceedings{galetzka-etal-2021-space,
+    title = "Space Efficient Context Encoding for Non-Task-Oriented Dialogue Generation with Graph Attention Transformer",
+    author = "Galetzka, Fabian  and
+      Rose, Jewgeni  and
+      Schlangen, David  and
+      Lehmann, Jens",
+    booktitle = "Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing (Volume 1: Long Papers)",
+    month = aug,
+    year = "2021",
+    address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2021.acl-long.546",
+    doi = "10.18653/v1/2021.acl-long.546",
+    pages = "7028--7041"
+}
+````
 
 ### License ###
 
